@@ -103,7 +103,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: 'No se detectó voz' }, { status: 400 })
     }
 
-    // ── 2. gpt-5 — texto → tareas estructuradas (json_schema) ─────────────────
+    // ── 2. gpt-4o-mini — texto → tareas estructuradas (json_schema) ──────────
 
     const systemPrompt = `Sos un asistente de agenda para un abogado peruano.
 Convertí el texto hablado en una lista de tareas estructuradas.
@@ -145,7 +145,8 @@ Reglas generales:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-5',
+        model: 'gpt-4o-mini',
+        temperature: 0,
         response_format: {
           type: 'json_schema',
           json_schema: VOICE_TASKS_SCHEMA,

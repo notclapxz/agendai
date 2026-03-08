@@ -46,7 +46,7 @@ src/
 │   ├── agenda/page.tsx         # Vista principal (Server Component, auth guard)
 │   └── api/
 │       ├── push/               # subscribe/route.ts · unsubscribe/route.ts
-│       └── voice/route.ts      # POST — gpt-4o-transcribe + gpt-5 (json_schema) → tareas estructuradas
+│       └── voice/route.ts      # POST — gpt-4o-transcribe + gpt-4o-mini (json_schema) → tareas estructuradas
 ├── components/
 │   ├── agenda/                 # AgendaLayout, DateNavigator, DayView,
 │   │                           # TaskItem, TaskInput, CarriedSection
@@ -221,7 +221,7 @@ El sistema permite crear tareas dictando por voz. Pipeline: grabación → trans
 
 **Pipeline AI**:
 1. gpt-4o-transcribe → transcripción del audio en español
-2. gpt-5 (`temperature: 0`, `json_schema`) → extrae array de tareas estructuradas
+2. gpt-4o-mini (`temperature: 0`, `json_schema`) → extrae array de tareas estructuradas
 
 **Tipo VoiceTask**:
 ```typescript
