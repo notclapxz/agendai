@@ -8,20 +8,26 @@ import { cn } from '@/lib/utils'
 import { parseTask, parseTimeInput } from '@/lib/utils/task-parser'
 import { TIMED_TASK_TYPES, TASK_TYPE_LABELS } from '@/lib/types/database'
 import { toDateString } from '@/lib/utils/dates'
-import type { TaskType, TaskSubmitData } from '@/lib/types/database'
+import type { TaskType, TaskSubmitData, VoiceTask } from '@/lib/types/database'
 
-// ─── Tipos ────────────────────────────────────────────────────────────────────
-
-interface VoiceTask {
-  title: string
-  type: TaskType
-  time: string | null
-  date: string | null
-}
+// ─── Tipos locales ────────────────────────────────────────────────────────────
 
 interface TaskInputProps {
   onSubmit: (data: TaskSubmitData) => void
   selectedDate: Date  // día que está viendo el usuario
+}
+
+// ─── Helper: detectar mimeType soportado por MediaRecorder ───────────────────
+
+function getSupportedMimeType(): string | null {
+  if (typeof window === 'undefined' || typeof MediaRecorder === 'undefined') return null
+
+  // Orden de preferencia: webm primero (Chrome/Firefox), mp4 como fallback (Safari/iOS)
+  const candidates = ['audio/webm', 'audio/mp4', 'audio/webm;codecs=opus']
+  for (const type of candidates) {
+    if (MediaRecorder.isTypeSupported(type)) return type
+  }
+  return null
 }
 
 // ─── Helper fecha para preview de voz ────────────────────────────────────────
@@ -53,6 +59,8 @@ export default function TaskInput({ onSubmit, selectedDate }: TaskInputProps) {
   const timeRef = useRef<HTMLInputElement>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
+  // Guardamos el mimeType elegido para reutilizarlo en processAudio
+  const mimeTypeRef = useRef<string>('audio/webm')
 
   // ── Flujo texto normal ───────────────────────────────────────────────────
 
@@ -101,9 +109,18 @@ export default function TaskInput({ onSubmit, selectedDate }: TaskInputProps) {
   async function startRecording() {
     setVoiceError(null)
     setVoiceTasks(null)
+
+    // Detectar MIME type soportado ANTES de pedir acceso al micrófono
+    const mimeType = getSupportedMimeType()
+    if (!mimeType) {
+      setVoiceError('Tu navegador no soporta grabación de voz.')
+      return
+    }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' })
+      const mediaRecorder = new MediaRecorder(stream, { mimeType })
+      mimeTypeRef.current = mimeType
       chunksRef.current = []
 
       mediaRecorder.ondataavailable = (e) => {
@@ -133,9 +150,11 @@ export default function TaskInput({ onSubmit, selectedDate }: TaskInputProps) {
 
   async function processAudio() {
     try {
-      const blob = new Blob(chunksRef.current, { type: 'audio/webm' })
+      const mimeType = mimeTypeRef.current
+      const ext = mimeType.includes('mp4') ? 'mp4' : 'webm'
+      const blob = new Blob(chunksRef.current, { type: mimeType })
       const form = new FormData()
-      form.append('audio', blob, 'audio.webm')
+      form.append('audio', blob, `audio.${ext}`)
       form.append('today', toDateString(new Date()))
       form.append('selectedDate', toDateString(selectedDate))
 

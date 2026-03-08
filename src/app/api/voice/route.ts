@@ -1,13 +1,45 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import type { VoiceTask } from '@/lib/types/database'
 
-// ─── Tipos ────────────────────────────────────────────────────────────────────
+// ─── JSON Schema para gpt-5 structured output ────────────────────────────────
 
-interface VoiceTask {
-  title: string
-  type: 'Tarea' | 'Audiencia' | 'Reunion' | 'Llamada' | 'Plazo' | 'Escrito' | 'Otro'
-  time: string | null
-  date: string | null  // YYYY-MM-DD — null = usar el día seleccionado
+const VOICE_TASKS_SCHEMA = {
+  name: 'voice_tasks',
+  strict: true,
+  schema: {
+    type: 'object',
+    required: ['tasks'],
+    additionalProperties: false,
+    properties: {
+      tasks: {
+        type: 'array',
+        items: {
+          type: 'object',
+          required: ['title', 'type', 'time', 'date'],
+          additionalProperties: false,
+          properties: {
+            title: {
+              type: 'string',
+              description: 'Título de la tarea, sin incluir tipo ni hora',
+            },
+            type: {
+              type: 'string',
+              enum: ['Tarea', 'Audiencia', 'Reunion', 'Llamada', 'Plazo', 'Escrito', 'Otro'],
+            },
+            time: {
+              anyOf: [{ type: 'string' }, { type: 'null' }],
+              description: 'Hora en formato HH:MM o null si no se especificó',
+            },
+            date: {
+              anyOf: [{ type: 'string' }, { type: 'null' }],
+              description: 'Fecha en formato YYYY-MM-DD o null si se usa la fecha seleccionada',
+            },
+          },
+        },
+      },
+    },
+  },
 }
 
 // ─── Handler ──────────────────────────────────────────────────────────────────
@@ -27,9 +59,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   try {
     const formData = await req.formData()
-    const audioFile = formData.get('audio')
-    const todayStr  = formData.get('today') as string | null   // YYYY-MM-DD enviado por el cliente
-    const selectedDateStr = formData.get('selectedDate') as string | null  // día que está viendo
+    const audioFile      = formData.get('audio')
+    const todayStr       = formData.get('today') as string | null
+    const selectedDateStr = formData.get('selectedDate') as string | null
 
     if (!audioFile || !(audioFile instanceof Blob)) {
       return NextResponse.json({ error: 'Audio requerido' }, { status: 400 })
@@ -39,34 +71,42 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: 'Fecha requerida' }, { status: 400 })
     }
 
-    // ── 1. Whisper — audio → texto ────────────────────────────────────────────
+    // ── 1. gpt-4o-transcribe — audio → texto ──────────────────────────────────
 
-    const whisperForm = new FormData()
-    whisperForm.append('file', audioFile, 'audio.webm')
-    whisperForm.append('model', 'whisper-1')
-    whisperForm.append('language', 'es')
-    whisperForm.append('response_format', 'text')
+    // Detectar extensión según mime type del blob
+    const mimeType = audioFile.type || 'audio/webm'
+    const ext = mimeType.includes('mp4') ? 'mp4' : 'webm'
 
-    const whisperRes = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+    const transcribeForm = new FormData()
+    transcribeForm.append('file', audioFile, `audio.${ext}`)
+    transcribeForm.append('model', 'gpt-4o-transcribe')
+    transcribeForm.append('language', 'es')
+    // Pedimos json para leer .text de forma explícita (más robusto que 'text' plano)
+    transcribeForm.append('response_format', 'json')
+
+    const transcribeRes = await fetch('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST',
       headers: { Authorization: `Bearer ${apiKey}` },
-      body: whisperForm,
+      body: transcribeForm,
     })
 
-    if (!whisperRes.ok) {
-      console.error('[voice] Whisper error', await whisperRes.text())
+    if (!transcribeRes.ok) {
+      console.error('[voice] Transcription error', await transcribeRes.text())
       return NextResponse.json({ error: 'Error al transcribir audio' }, { status: 500 })
     }
 
-    const transcript = (await whisperRes.text()).trim()
+    const transcribeData = await transcribeRes.json() as { text?: string; data?: { text?: string } }
+    // Guard defensivo: cubrimos variantes del wrapper de la API
+    const transcript = (transcribeData.text ?? transcribeData.data?.text ?? '').trim()
+
     if (!transcript) {
       return NextResponse.json({ error: 'No se detectó voz' }, { status: 400 })
     }
 
-    // ── 2. gpt-4o-mini — texto → tareas estructuradas con fechas ─────────────
+    // ── 2. gpt-5 — texto → tareas estructuradas (json_schema) ─────────────────
 
     const systemPrompt = `Sos un asistente de agenda para un abogado peruano.
-Convertí el texto hablado en una lista de tareas JSON.
+Convertí el texto hablado en una lista de tareas estructuradas.
 
 Contexto de fechas:
 - Hoy es: ${todayStr} (${getDayName(todayStr)})
@@ -95,12 +135,8 @@ Reglas de hora:
 - Si no hay hora → null
 
 Reglas generales:
-- Separar correctamente cuando haya múltiples tareas
-- El título debe ser limpio, sin la hora ni la fecha si ya las extrajiste
-- Respondé SOLO con JSON válido, sin markdown
-
-Formato:
-[{"title": "...", "type": "...", "time": "HH:MM" | null, "date": "YYYY-MM-DD" | null}]`
+- Separar correctamente cuando haya múltiples tareas en el dictado
+- El título debe ser limpio, sin la hora ni la fecha si ya las extrajiste`
 
     const chatRes = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -109,8 +145,12 @@ Formato:
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-5',
         temperature: 0,
+        response_format: {
+          type: 'json_schema',
+          json_schema: VOICE_TASKS_SCHEMA,
+        },
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: transcript },
@@ -119,7 +159,7 @@ Formato:
     })
 
     if (!chatRes.ok) {
-      console.error('[voice] GPT error', await chatRes.text())
+      console.error('[voice] GPT-5 error', await chatRes.text())
       return NextResponse.json({ error: 'Error al procesar tareas' }, { status: 500 })
     }
 
@@ -127,23 +167,24 @@ Formato:
       choices: Array<{ message: { content: string } }>
     }
 
-    const raw = chatData.choices[0]?.message?.content?.trim() ?? '[]'
+    const raw = chatData.choices[0]?.message?.content?.trim() ?? '{}'
 
-    let tasks: VoiceTask[]
+    let parsedTasks: VoiceTask[]
     try {
-      tasks = JSON.parse(raw) as VoiceTask[]
-      if (!Array.isArray(tasks)) throw new Error('Not an array')
+      const parsed = JSON.parse(raw) as { tasks?: VoiceTask[] }
+      parsedTasks = Array.isArray(parsed.tasks) ? parsed.tasks : []
     } catch {
       console.error('[voice] JSON parse error', raw)
       return NextResponse.json({ error: 'Respuesta inválida del modelo' }, { status: 500 })
     }
 
-    // Sanitizar
+    // ── 3. Sanitización (defensa en profundidad) ───────────────────────────────
+
     const validTypes = ['Tarea', 'Audiencia', 'Reunion', 'Llamada', 'Plazo', 'Escrito', 'Otro']
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/
     const timeRegex = /^\d{2}:\d{2}$/
 
-    const sanitized: VoiceTask[] = tasks
+    let sanitized: VoiceTask[] = parsedTasks
       .filter((t) => t.title && typeof t.title === 'string')
       .map((t) => ({
         title: t.title.trim(),
@@ -151,6 +192,16 @@ Formato:
         time: typeof t.time === 'string' && timeRegex.test(t.time) ? t.time : null,
         date: typeof t.date === 'string' && dateRegex.test(t.date) ? t.date : null,
       }))
+
+    // Fallback: si el modelo no extrajo tareas pero hay transcripción, crear una tarea básica
+    if (sanitized.length === 0 && transcript) {
+      sanitized = [{
+        title: transcript,
+        type: 'Tarea',
+        time: null,
+        date: null,
+      }]
+    }
 
     return NextResponse.json({ tasks: sanitized, transcript })
 

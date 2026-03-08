@@ -105,3 +105,19 @@ export interface TaskSubmitData {
   /** undefined → el receptor (DayView) usa su fecha seleccionada */
   date?: string
 }
+
+// =====================================================
+// VOICE API — /api/voice (gpt-4o-transcribe + gpt-5)
+// =====================================================
+
+export interface VoiceTask {
+  title: string
+  type: TaskType           // CASE-SENSITIVE — debe matchear TaskType exactamente
+  time: string | null      // 'HH:MM' o null
+  date: string | null      // 'YYYY-MM-DD' o null (null = usar selectedDate en UI)
+}
+
+export interface VoiceApiResponse {
+  tasks: VoiceTask[]
+  transcript: string
+}
