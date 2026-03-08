@@ -160,7 +160,7 @@ Reglas generales:
 
     if (!chatRes.ok) {
       const errBody = await chatRes.text()
-      console.error('[voice] GPT-5 error', chatRes.status, errBody)
+      console.error('[voice] GPT error', chatRes.status, errBody)
       return NextResponse.json({ error: 'Error al procesar tareas', detail: errBody }, { status: 500 })
     }
 
