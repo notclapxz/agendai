@@ -38,7 +38,7 @@ npx supabase functions deploy event-reminder
 
 ```
 src/
-├── middleware.ts               # Middleware SSR — session refresh + auth redirect
+├── proxy.ts                    # Proxy SSR — session refresh + auth redirect (Next.js 16)
 ├── app/
 │   ├── layout.tsx              # Root layout (PWA meta, manifest)
 │   ├── page.tsx                # → redirect /agenda
@@ -259,7 +259,7 @@ interface VoiceTask {
 - [ ] `import type` para todos los tipos
 - [ ] No quedan `console.log` (usar `console.error` solo en catch)
 - [ ] `router.refresh()` después de mutaciones en Client Components
-- [ ] `src/middleware.ts` existe y exporta `middleware` (NO debe existir `src/proxy.ts`)
+- [ ] `src/proxy.ts` existe y exporta `proxy` (NO debe existir `src/middleware.ts`)
 
 ---
 
