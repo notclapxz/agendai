@@ -10,16 +10,7 @@ import { getTodayWorkingDay, toDateString } from '@/lib/utils/dates'
 import { useTasks } from '@/hooks/useTasks'
 import { usePush } from '@/hooks/usePush'
 import { cn } from '@/lib/utils'
-import type { TaskType } from '@/lib/types/database'
-
-// ─── Tipos ────────────────────────────────────────────────────────────────────
-
-interface TaskSubmitData {
-  title: string
-  type: TaskType
-  time: string | null
-  date: string
-}
+import type { TaskSubmitData } from '@/lib/types/database'
 
 interface AgendaLayoutProps {
   userId: string
@@ -59,7 +50,7 @@ export default function AgendaLayout({ userId, userEmail }: AgendaLayoutProps) {
 
   // ── Handlers ─────────────────────────────────────────────────────────────
 
-  async function handleAddTask({ title, type, time, date }: TaskSubmitData) {
+  async function handleAddTask({ title, type, time, date }: TaskSubmitData & { date: string }) {
     await createTask({ title, type, time, date })
   }
 

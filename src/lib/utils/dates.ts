@@ -85,3 +85,11 @@ export function formatShortDay(date: Date): { num: string; label: string } {
     label: format(date, 'EEE', { locale: es }),
   }
 }
+
+export function formatCarriedFrom(dateStr: string): string {
+  const date = fromDateString(dateStr)
+  const yesterday = getLastWorkingDay(getTodayWorkingDay())
+  if (isSameDay(date, yesterday)) return 'de ayer'
+  const label = format(date, 'EEEE d/MM', { locale: es })
+  return `del ${label}`
+}

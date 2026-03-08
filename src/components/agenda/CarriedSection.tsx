@@ -2,10 +2,8 @@
 
 import { useState } from 'react'
 import { ChevronDown, ChevronRight } from 'lucide-react'
-import { format } from 'date-fns'
-import { es } from 'date-fns/locale'
 import TaskItem from '@/components/agenda/TaskItem'
-import { fromDateString, isSameDay, getLastWorkingDay, getTodayWorkingDay } from '@/lib/utils/dates'
+import { formatCarriedFrom } from '@/lib/utils/dates'
 import type { Task } from '@/lib/types/database'
 
 interface CarriedSectionProps {
@@ -13,18 +11,6 @@ interface CarriedSectionProps {
   onToggle: (id: string) => void
   onDelete: (id: string) => void
   onEdit: (id: string, updates: { title: string; time: string | null }) => void
-}
-
-/** Formatea la fecha de origen de forma legible. */
-function formatCarriedFrom(dateStr: string): string {
-  const date = fromDateString(dateStr)
-  const yesterday = getLastWorkingDay(getTodayWorkingDay())
-
-  if (isSameDay(date, yesterday)) return 'de ayer'
-
-  // "del lunes 10/02", "del martes 03/02", etc.
-  const label = format(date, 'EEEE d/MM', { locale: es })
-  return `del ${label}`
 }
 
 export default function CarriedSection({ tasks, onToggle, onDelete, onEdit }: CarriedSectionProps) {

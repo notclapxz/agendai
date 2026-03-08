@@ -1,22 +1,11 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { format } from 'date-fns'
-import { es } from 'date-fns/locale'
 import { Trash2, CornerDownLeft, GripVertical, Pencil, Check, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { fromDateString, isSameDay, getLastWorkingDay, getTodayWorkingDay } from '@/lib/utils/dates'
+import { formatCarriedFrom } from '@/lib/utils/dates'
 import { parseTimeInput } from '@/lib/utils/task-parser'
 import type { Task, TaskType } from '@/lib/types/database'
-
-/** Formatea la fecha de origen de una tarea arrastrada. */
-function formatCarriedFrom(dateStr: string): string {
-  const date = fromDateString(dateStr)
-  const yesterday = getLastWorkingDay(getTodayWorkingDay())
-  if (isSameDay(date, yesterday)) return 'de ayer'
-  const label = format(date, 'EEEE d/MM', { locale: es })
-  return `del ${label}`
-}
 
 // ─── Badge config por tipo ────────────────────────────────────────────────────
 

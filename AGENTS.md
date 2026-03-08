@@ -1,7 +1,7 @@
 # AGENTS.md — agenda-legal
 
 **Proyecto**: Agenda personal para abogado — PWA multi-dispositivo  
-**Stack**: Next.js 15 · React 19 · TypeScript strict · Supabase (`@supabase/ssr`) · Tailwind 4 · shadcn/ui · Web Push  
+**Stack**: Next.js 16.1.6 · React 19 · TypeScript strict · Supabase (`@supabase/ssr`) · Tailwind 4 · shadcn/ui · Web Push  
 **Working directory**: `/Users/sebastian/Desktop/agenda-legal/` — TODOS los comandos desde aquí  
 **Path alias**: `@/` → `src/` (configurado en `tsconfig.json`)  
 **Docs completos**: `.agents/` — leer ANTES de empezar

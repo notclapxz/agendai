@@ -93,3 +93,15 @@ export interface ParsedTask {
   time: string | null        // extraído del texto si estaba presente
   requiresTimePrompt: boolean // true si es Audiencia/Reunion/Plazo sin hora
 }
+
+// =====================================================
+// UI TYPES — compartidos entre componentes
+// =====================================================
+
+export interface TaskSubmitData {
+  title: string
+  type: TaskType
+  time: string | null
+  /** undefined → el receptor (DayView) usa su fecha seleccionada */
+  date?: string
+}

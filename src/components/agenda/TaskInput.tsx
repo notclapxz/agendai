@@ -6,18 +6,11 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { parseTask, parseTimeInput } from '@/lib/utils/task-parser'
-import { TIMED_TASK_TYPES } from '@/lib/types/database'
+import { TIMED_TASK_TYPES, TASK_TYPE_LABELS } from '@/lib/types/database'
 import { toDateString } from '@/lib/utils/dates'
-import type { TaskType } from '@/lib/types/database'
+import type { TaskType, TaskSubmitData } from '@/lib/types/database'
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
-
-interface TaskSubmitData {
-  title: string
-  type: TaskType
-  time: string | null
-  date?: string  // opcional — si no viene, DayView usa el día seleccionado
-}
 
 interface VoiceTask {
   title: string
@@ -29,16 +22,6 @@ interface VoiceTask {
 interface TaskInputProps {
   onSubmit: (data: TaskSubmitData) => void
   selectedDate: Date  // día que está viendo el usuario
-}
-
-// ─── Badge config (igual que TaskItem) ───────────────────────────────────────
-
-const TYPE_LABELS: Partial<Record<TaskType, string>> = {
-  Audiencia: '⚖️ Audiencia',
-  Reunion:   '🤝 Reunión',
-  Llamada:   '📞 Llamada',
-  Plazo:     '⏰ Plazo',
-  Otro:      '📌 Otro',
 }
 
 // ─── Helper fecha para preview de voz ────────────────────────────────────────
@@ -254,7 +237,7 @@ export default function TaskInput({ onSubmit, selectedDate }: TaskInputProps) {
           </p>
           <ul className="mb-3 space-y-1">
             {voiceTasks.map((t, i) => (
-              <li key={i} className="flex items-baseline gap-2 text-sm text-gray-800">
+              <li key={`${t.type}-${t.title}-${i}`} className="flex items-baseline gap-2 text-sm text-gray-800">
                 <span className="shrink-0 text-blue-400">·</span>
                 {t.time && (
                   <span className="shrink-0 tabular-nums font-semibold text-blue-600">
@@ -263,7 +246,7 @@ export default function TaskInput({ onSubmit, selectedDate }: TaskInputProps) {
                 )}
                 {t.type !== 'Tarea' && (
                   <span className="shrink-0 text-xs text-gray-500">
-                    {TYPE_LABELS[t.type]}
+                    {TASK_TYPE_LABELS[t.type]}
                   </span>
                 )}
                 <span>{t.title}</span>

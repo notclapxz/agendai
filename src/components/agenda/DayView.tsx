@@ -21,14 +21,7 @@ import SortableTaskItem from '@/components/agenda/SortableTaskItem'
 import CarriedSection from '@/components/agenda/CarriedSection'
 import TaskInput from '@/components/agenda/TaskInput'
 import { formatDateHeader, toDateString } from '@/lib/utils/dates'
-import type { Task, TaskType } from '@/lib/types/database'
-
-interface TaskSubmitData {
-  title: string
-  type: TaskType
-  time: string | null
-  date?: string  // opcional — si viene de voz con fecha distinta al día seleccionado
-}
+import type { Task, TaskSubmitData } from '@/lib/types/database'
 
 interface DayViewProps {
   date: Date
