@@ -20,7 +20,7 @@ import TaskItem from '@/components/agenda/TaskItem'
 import SortableTaskItem from '@/components/agenda/SortableTaskItem'
 import CarriedSection from '@/components/agenda/CarriedSection'
 import TaskInput from '@/components/agenda/TaskInput'
-import { formatDateHeader, toDateString } from '@/lib/utils/dates'
+import { formatDateHeader, toDateString, getTodayWorkingDay } from '@/lib/utils/dates'
 import type { Task, TaskSubmitData } from '@/lib/types/database'
 
 interface DayViewProps {
@@ -48,7 +48,7 @@ export default function DayView({
 }: DayViewProps) {
   // Calcular si es un día pasado (sin estado, se deriva de la prop date)
   const isPastDay = (() => {
-    const today = new Date()
+    const today = getTodayWorkingDay()
     today.setHours(0, 0, 0, 0)
     const d = new Date(date)
     d.setHours(0, 0, 0, 0)
