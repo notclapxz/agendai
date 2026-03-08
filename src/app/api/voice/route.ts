@@ -73,6 +73,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     // ── 1. gpt-4o-transcribe — audio → texto ──────────────────────────────────
 
+    const t0 = Date.now()
+
     // Detectar extensión según mime type del blob
     const mimeType = audioFile.type || 'audio/webm'
     const ext = mimeType.includes('mp4') ? 'mp4' : 'webm'
@@ -98,6 +100,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const transcribeData = await transcribeRes.json() as { text?: string; data?: { text?: string } }
     // Guard defensivo: cubrimos variantes del wrapper de la API
     const transcript = (transcribeData.text ?? transcribeData.data?.text ?? '').trim()
+
+    const t1 = Date.now()
+    console.error(`[voice] transcription: ${t1 - t0}ms | size: ${audioFile.size}b`)
 
     if (!transcript) {
       return NextResponse.json({ error: 'No se detectó voz' }, { status: 400 })
@@ -167,6 +172,9 @@ Reglas generales:
     const chatData = await chatRes.json() as {
       choices: Array<{ message: { content: string } }>
     }
+
+    const t2 = Date.now()
+    console.error(`[voice] extraction: ${t2 - t1}ms | total: ${t2 - t0}ms`)
 
     const raw = chatData.choices[0]?.message?.content?.trim() ?? '{}'
 
