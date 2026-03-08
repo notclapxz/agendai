@@ -146,7 +146,6 @@ Reglas generales:
       },
       body: JSON.stringify({
         model: 'gpt-5',
-        temperature: 0,
         response_format: {
           type: 'json_schema',
           json_schema: VOICE_TASKS_SCHEMA,
