@@ -28,11 +28,11 @@ const VOICE_TASKS_SCHEMA = {
               enum: ['Tarea', 'Audiencia', 'Reunion', 'Llamada', 'Plazo', 'Escrito', 'Otro'],
             },
             time: {
-              anyOf: [{ type: 'string' }, { type: 'null' }],
+              type: ['string', 'null'],
               description: 'Hora en formato HH:MM o null si no se especificó',
             },
             date: {
-              anyOf: [{ type: 'string' }, { type: 'null' }],
+              type: ['string', 'null'],
               description: 'Fecha en formato YYYY-MM-DD o null si se usa la fecha seleccionada',
             },
           },
@@ -159,8 +159,9 @@ Reglas generales:
     })
 
     if (!chatRes.ok) {
-      console.error('[voice] GPT-5 error', await chatRes.text())
-      return NextResponse.json({ error: 'Error al procesar tareas' }, { status: 500 })
+      const errBody = await chatRes.text()
+      console.error('[voice] GPT-5 error', chatRes.status, errBody)
+      return NextResponse.json({ error: 'Error al procesar tareas', detail: errBody }, { status: 500 })
     }
 
     const chatData = await chatRes.json() as {
