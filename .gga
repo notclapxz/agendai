@@ -1,0 +1,1 @@
+EXCLUDE_PATTERNS=*.test.*,*.spec.*,*.d.ts,dist/*,build/*,node_modules/*,.next/*
