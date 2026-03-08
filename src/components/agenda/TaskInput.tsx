@@ -159,10 +159,14 @@ export default function TaskInput({ onSubmit, selectedDate }: TaskInputProps) {
       form.append('selectedDate', toDateString(selectedDate))
 
       const res = await fetch('/api/voice', { method: 'POST', body: form })
-      const data = await res.json() as { tasks?: VoiceTask[]; error?: string }
+      const data = await res.json() as { tasks?: VoiceTask[]; error?: string; detail?: string }
 
       if (!res.ok || !data.tasks) {
-        setVoiceError(data.error ?? 'Error al procesar el audio')
+        // En dev/debug: mostrar el detalle del error de OpenAI si viene
+        const msg = data.detail
+          ? `${data.error ?? 'Error'}: ${data.detail.slice(0, 120)}`
+          : (data.error ?? 'Error al procesar el audio')
+        setVoiceError(msg)
         return
       }
 
