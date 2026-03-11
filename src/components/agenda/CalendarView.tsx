@@ -172,12 +172,12 @@ export default function CalendarView({
                     'relative flex h-16 flex-col overflow-hidden rounded-md p-1 text-right transition-colors sm:h-20',
                     // Domingo — sin interacción, apagado
                     isSunday && 'cursor-default opacity-40',
-                    // Día laborable — interactivo
-                    !isSunday && 'cursor-pointer hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400',
-                    // Hoy — fondo accent
-                    todayCell && !selectedCell && 'bg-blue-50 ring-1 ring-blue-200',
-                    // Seleccionado — resaltado fuerte
-                    selectedCell && !isSunday && 'bg-blue-600 text-white ring-2 ring-blue-600',
+                    // Día laborable — interactivo (hover solo en días que NO son hoy ni seleccionados)
+                    !isSunday && !todayCell && !selectedCell && 'cursor-pointer hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400',
+                    // Hoy — ring azul, fondo muy suave, sin hover que tape
+                    todayCell && !selectedCell && 'cursor-pointer ring-2 ring-blue-500 focus-visible:outline-none',
+                    // Seleccionado — ring azul fuerte, fondo neutro (no sólido) para que los chips se vean
+                    selectedCell && !isSunday && 'cursor-pointer ring-2 ring-blue-600 bg-blue-50 focus-visible:outline-none',
                   )}
                 >
                   {/* Número del día */}
@@ -187,7 +187,8 @@ export default function CalendarView({
                       isSunday && 'text-gray-400',
                       !isSunday && !todayCell && !selectedCell && 'text-gray-700',
                       todayCell && !selectedCell && 'text-blue-600',
-                      selectedCell && 'text-white',
+                      selectedCell && !todayCell && 'text-blue-700',
+                      selectedCell && todayCell && 'text-blue-600',
                     )}
                   >
                     {day.getDate()}
@@ -201,9 +202,7 @@ export default function CalendarView({
                           key={task.id}
                           className={cn(
                             'truncate rounded px-1 text-[10px] font-medium leading-tight',
-                            selectedCell
-                              ? 'bg-blue-500 text-blue-100'
-                              : TYPE_CHIP_CLASS[task.type]
+                            TYPE_CHIP_CLASS[task.type]
                           )}
                           title={task.title}
                         >
@@ -216,9 +215,7 @@ export default function CalendarView({
                         <span
                           className={cn(
                             'truncate rounded px-1 text-[10px] font-medium leading-tight',
-                            selectedCell
-                              ? 'bg-blue-500 text-blue-100'
-                              : 'bg-gray-100 text-gray-500'
+                            'bg-gray-100 text-gray-500'
                           )}
                         >
                           +{extraCount}

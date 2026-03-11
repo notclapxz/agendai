@@ -1,9 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { Bell, BellOff, CalendarDays, List, LogOut, Menu, X } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { Bell, BellOff, CalendarDays, List, Menu, X } from 'lucide-react'
 import CalendarView from '@/components/agenda/CalendarView'
 import DateNavigator from '@/components/agenda/DateNavigator'
 import DayView from '@/components/agenda/DayView'
@@ -20,8 +18,7 @@ interface AgendaLayoutProps {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function AgendaLayout({ userId, userEmail }: AgendaLayoutProps) {
-  const router = useRouter()
+export default function AgendaLayout({ userId }: AgendaLayoutProps) {
   const [selectedDate, setSelectedDate] = useState<Date>(getTodayWorkingDay)
   const [navOpen, setNavOpen] = useState(false)
   const [viewMode, setViewMode] = useState<'agenda' | 'calendar'>('agenda')
@@ -75,15 +72,6 @@ export default function AgendaLayout({ userId, userEmail }: AgendaLayoutProps) {
     setViewMode('agenda')
   }
 
-  // ── Logout ─────────────────────────────────────────────────────────────
-
-  async function handleLogout() {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    router.push('/login')
-    router.refresh()
-  }
-
   // ── Render ─────────────────────────────────────────────────────────────
 
   return (
@@ -108,13 +96,25 @@ export default function AgendaLayout({ userId, userEmail }: AgendaLayoutProps) {
               <img src="/icons/icon-192.png" alt="MLP" className="h-7 w-7 object-cover" />
             </div>
             <span className="hidden text-sm font-bold text-gray-800 sm:block">
-              Agenda Legal
+              Agenda
             </span>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="hidden text-xs text-gray-400 sm:block">{userEmail}</span>
+          {/* Botón toggle agenda / calendario — primero */}
+          <button
+            onClick={() => setViewMode((v) => v === 'agenda' ? 'calendar' : 'agenda')}
+            aria-label={viewMode === 'agenda' ? 'Ver calendario' : 'Ver agenda'}
+            title={viewMode === 'agenda' ? 'Ver calendario mensual' : 'Ver agenda diaria'}
+            className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-800"
+          >
+            {viewMode === 'agenda' ? (
+              <CalendarDays className="h-4 w-4" />
+            ) : (
+              <List className="h-4 w-4" />
+            )}
+          </button>
 
           {/* Botón notificaciones — solo si el browser lo soporta */}
           {isSupported && (
@@ -140,35 +140,12 @@ export default function AgendaLayout({ userId, userEmail }: AgendaLayoutProps) {
               </button>
               {/* Error visible para diagnóstico */}
               {pushError && (
-                <span className="absolute top-11 right-16 z-50 max-w-xs rounded bg-red-600 px-2 py-1 text-xs text-white shadow-lg">
+                <span className="absolute top-11 right-4 z-50 max-w-xs rounded bg-red-600 px-2 py-1 text-xs text-white shadow-lg">
                   {pushError}
                 </span>
               )}
             </div>
           )}
-
-          {/* Botón toggle agenda / calendario */}
-          <button
-            onClick={() => setViewMode((v) => v === 'agenda' ? 'calendar' : 'agenda')}
-            aria-label={viewMode === 'agenda' ? 'Ver calendario' : 'Ver agenda'}
-            title={viewMode === 'agenda' ? 'Ver calendario mensual' : 'Ver agenda diaria'}
-            className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-800"
-          >
-            {viewMode === 'agenda' ? (
-              <CalendarDays className="h-4 w-4" />
-            ) : (
-              <List className="h-4 w-4" />
-            )}
-          </button>
-
-          <button
-            onClick={handleLogout}
-            aria-label="Cerrar sesión"
-            className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-800"
-          >
-            <LogOut className="h-4 w-4" />
-            <span className="hidden sm:block">Salir</span>
-          </button>
         </div>
       </header>
 
