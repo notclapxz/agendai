@@ -22,8 +22,13 @@ interface TaskInputProps {
 function getSupportedMimeType(): string | null {
   if (typeof window === 'undefined' || typeof MediaRecorder === 'undefined') return null
 
-  // Orden de preferencia: webm primero (Chrome/Firefox), mp4 como fallback (Safari/iOS)
-  const candidates = ['audio/webm', 'audio/mp4', 'audio/webm;codecs=opus']
+  // Orden de preferencia: webm+opus (Chrome/Firefox) → mp4/AAC (Safari/iOS)
+  const candidates = [
+    'audio/webm;codecs=opus',        // Chrome/Firefox — preferido
+    'audio/webm',                    // Chrome/Firefox — fallback
+    'audio/mp4;codecs=mp4a.40.2',   // Safari/iOS — AAC explícito
+    'audio/mp4',                     // Safari/iOS — fallback
+  ]
   for (const type of candidates) {
     if (MediaRecorder.isTypeSupported(type)) return type
   }

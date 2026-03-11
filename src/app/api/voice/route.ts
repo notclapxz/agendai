@@ -73,9 +73,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     // ── 1. gpt-4o-transcribe — audio → texto ──────────────────────────────────
 
-    // Detectar extensión según mime type del blob
-    const mimeType = audioFile.type || 'audio/webm'
-    const ext = mimeType.includes('mp4') ? 'mp4' : 'webm'
+    // Derivar ext desde el filename (no de audioFile.type — Safari lo envía vacío)
+    const filename = (audioFile as File).name ?? 'audio.webm'
+    const ext = filename.endsWith('.mp4') ? 'mp4' : 'webm'
 
     const transcribeForm = new FormData()
     transcribeForm.append('file', audioFile, `audio.${ext}`)
