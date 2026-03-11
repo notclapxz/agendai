@@ -25,7 +25,7 @@ const VOICE_TASKS_SCHEMA = {
             },
             type: {
               type: 'string',
-              enum: ['Tarea', 'Audiencia', 'Reunion', 'Llamada', 'Plazo', 'Escrito', 'Otro'],
+              enum: ['Tarea', 'Audiencia', 'Reunion', 'Llamada', 'Plazo', 'Escrito', 'Evento', 'Documento', 'Otro'],
             },
             time: {
               type: ['string', 'null'],
@@ -118,13 +118,15 @@ Tabla de referencia — próximos 14 días desde hoy (usá ESTA tabla para resol
 ${dateReference}
 
 Tipos válidos (exactamente así, case-sensitive):
-- "Tarea" → tarea genérica, preparar documentos, etc.
+- "Tarea" → tarea genérica, pendiente, to-do
 - "Audiencia" → audiencia, declaración testimonial, declaración indagatoria, testimonial, indagatoria
-- "Reunion" → reunión, junta, encuentro
+- "Reunion" → reunión, junta, encuentro, meeting
 - "Llamada" → llamar, llamada, contactar por teléfono
 - "Plazo" → plazo, vencimiento, deadline, fecha límite
 - "Escrito" → escrito, escrito judicial, presentar escrito, redactar escrito
-- "Otro" → cualquier otra cosa
+- "Evento" → evento, acto, ceremonia, conferencia, webinar, capacitación
+- "Documento" → documento, doc, redactar, preparar documento, informe, reporte, contrato
+- "Otro" → cualquier otra cosa que no encaje en los anteriores
 
 Reglas de fecha:
 - Si menciona "mañana" → usá la primera fecha de la tabla de referencia (el día inmediato siguiente a hoy)
@@ -188,7 +190,7 @@ Reglas de separación de tareas (MUY IMPORTANTE):
 
     // ── 3. Sanitización (defensa en profundidad) ───────────────────────────────
 
-    const validTypes = ['Tarea', 'Audiencia', 'Reunion', 'Llamada', 'Plazo', 'Escrito', 'Otro']
+    const validTypes = ['Tarea', 'Audiencia', 'Reunion', 'Llamada', 'Plazo', 'Escrito', 'Evento', 'Documento', 'Otro']
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/
     const timeRegex = /^\d{2}:\d{2}$/
 

@@ -2,7 +2,7 @@
 // ENUMS
 // =====================================================
 
-export type TaskType = 'Tarea' | 'Audiencia' | 'Reunion' | 'Llamada' | 'Plazo' | 'Escrito' | 'Otro'
+export type TaskType = 'Tarea' | 'Audiencia' | 'Reunion' | 'Llamada' | 'Plazo' | 'Escrito' | 'Evento' | 'Documento' | 'Otro'
 
 export const TASK_TYPE_LABELS: Record<TaskType, string> = {
   Tarea:     '📄 Tarea',
@@ -11,11 +11,13 @@ export const TASK_TYPE_LABELS: Record<TaskType, string> = {
   Llamada:   '📞 Llamada',
   Plazo:     '⏰ Plazo',
   Escrito:   '📝 Escrito',
+  Evento:    '📅 Evento',
+  Documento: '🗂️ Documento',
   Otro:      '📌 Otro',
 }
 
 // Tipos que requieren hora (se muestra prompt inline si no hay hora)
-export const TIMED_TASK_TYPES: TaskType[] = ['Audiencia', 'Reunion', 'Plazo']
+export const TIMED_TASK_TYPES: TaskType[] = ['Audiencia', 'Reunion', 'Plazo', 'Evento']
 
 // =====================================================
 // TASK

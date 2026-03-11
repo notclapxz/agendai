@@ -18,6 +18,11 @@ const TYPE_KEYWORDS: Array<{ pattern: RegExp; type: TaskType }> = [
   { pattern: /^plazo\b/i,                        type: 'Plazo'     },
   { pattern: /^vencimiento\b/i,                  type: 'Plazo'     },
   { pattern: /^escrito\b/i,                      type: 'Escrito'   },
+  { pattern: /^preparar\s+documento\b/i,         type: 'Documento' },
+  { pattern: /^documento\b/i,                    type: 'Documento' },
+  { pattern: /^doc\b/i,                          type: 'Documento' },
+  { pattern: /^redactar\b/i,                     type: 'Documento' },
+  { pattern: /^evento\b/i,                       type: 'Evento'    },
 ]
 
 /**

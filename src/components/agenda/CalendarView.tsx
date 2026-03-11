@@ -18,6 +18,8 @@ const TYPE_CHIP_CLASS: Record<TaskType, string> = {
   Llamada:   'bg-green-100 text-green-800',
   Plazo:     'bg-yellow-100 text-yellow-800',
   Escrito:   'bg-purple-100 text-purple-800',
+  Evento:    'bg-pink-100 text-pink-800',
+  Documento: 'bg-indigo-100 text-indigo-800',
   Otro:      'bg-gray-100 text-gray-500',
 }
 

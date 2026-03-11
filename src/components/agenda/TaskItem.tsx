@@ -10,12 +10,14 @@ import type { Task, TaskType } from '@/lib/types/database'
 // ─── Badge config por tipo ────────────────────────────────────────────────────
 
 const BADGE_CONFIG: Partial<Record<TaskType, { label: string; className: string }>> = {
-  Audiencia: { label: '⚖️ Audiencia', className: 'bg-amber-100 text-amber-800' },
-  Reunion:   { label: '🤝 Reunión',   className: 'bg-blue-100 text-blue-800'   },
-  Llamada:   { label: '📞 Llamada',   className: 'bg-green-100 text-green-800' },
-  Plazo:     { label: '⏰ Plazo',     className: 'bg-yellow-100 text-yellow-800' },
-  Escrito:   { label: '📝 Escrito',   className: 'bg-purple-100 text-purple-800' },
-  Otro:      { label: '📌 Otro',      className: 'bg-gray-100 text-gray-600'   },
+  Audiencia: { label: '⚖️ Audiencia',  className: 'bg-amber-100 text-amber-800'   },
+  Reunion:   { label: '🤝 Reunión',    className: 'bg-blue-100 text-blue-800'     },
+  Llamada:   { label: '📞 Llamada',    className: 'bg-green-100 text-green-800'   },
+  Plazo:     { label: '⏰ Plazo',      className: 'bg-yellow-100 text-yellow-800' },
+  Escrito:   { label: '📝 Escrito',    className: 'bg-purple-100 text-purple-800' },
+  Evento:    { label: '📅 Evento',     className: 'bg-pink-100 text-pink-800'     },
+  Documento: { label: '🗂️ Documento',  className: 'bg-indigo-100 text-indigo-800' },
+  Otro:      { label: '📌 Otro',       className: 'bg-gray-100 text-gray-600'     },
 }
 
 // ─── Props ────────────────────────────────────────────────────────────────────
