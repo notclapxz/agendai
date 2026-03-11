@@ -164,9 +164,9 @@ export default function AgendaLayout({ userId }: AgendaLayoutProps) {
         >
           <DateNavigator
             selectedDate={selectedDate}
-
             onSelectDate={(date) => {
               setSelectedDate(date)
+              setViewMode('agenda')
               setNavOpen(false)
             }}
           />

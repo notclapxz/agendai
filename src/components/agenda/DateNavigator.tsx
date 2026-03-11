@@ -27,12 +27,20 @@ export default function DateNavigator({
   const [viewYear, setViewYear] = useState(selectedDate.getFullYear())
   const [viewMonth, setViewMonth] = useState(selectedDate.getMonth())
 
+  // Sincronizar mes visible cuando selectedDate cambia externamente
+  // (ej: click en el CalendarView desde otro mes)
+  useEffect(() => {
+    setViewYear(selectedDate.getFullYear())
+    setViewMonth(selectedDate.getMonth())
+  }, [selectedDate])
+
   const workingDays = getWorkingDaysOfMonth(viewYear, viewMonth)
 
-  // Scroll automático al día de hoy cuando está en el mes visible
-  const todayRef = useRef<HTMLButtonElement>(null)
+  // Ref al día seleccionado para scroll automático
+  const selectedRef = useRef<HTMLButtonElement>(null)
+  // Scroll automático al día seleccionado cuando cambia el mes visible
   useEffect(() => {
-    todayRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    selectedRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
   }, [viewMonth, viewYear])
 
   function prevMonth() {
@@ -102,7 +110,7 @@ export default function DateNavigator({
           return (
             <button
               key={dateStr}
-              ref={todayDay ? todayRef : undefined}
+              ref={selected ? selectedRef : undefined}
               onClick={() => onSelectDate(day)}
               className={cn(
                 'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors',
