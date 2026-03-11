@@ -1,33 +1,32 @@
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 
-/** Días laborables: Lun–Sáb. Los domingos NO EXISTEN en esta app. */
-export function isWorkingDay(date: Date): boolean {
-  return date.getDay() !== 0
+/** Todos los días son válidos — sin restricción por día de la semana. */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function isWorkingDay(_date: Date): boolean {
+  return true
 }
 
-/** Retrocede un día saltando domingos. */
+/** Retrocede exactamente un día. */
 export function getLastWorkingDay(date: Date): Date {
   const prev = new Date(date)
   prev.setDate(prev.getDate() - 1)
-  if (prev.getDay() === 0) prev.setDate(prev.getDate() - 1)
   return prev
 }
 
-/** Avanza un día saltando domingos. */
+/** Avanza exactamente un día. */
 export function getNextWorkingDay(date: Date): Date {
   const next = new Date(date)
   next.setDate(next.getDate() + 1)
-  if (next.getDay() === 0) next.setDate(next.getDate() + 1)
   return next
 }
 
-/** Todos los días Lun–Sáb de un mes dado. month es 0-indexed. */
+/** Todos los días del mes. month es 0-indexed. */
 export function getWorkingDaysOfMonth(year: number, month: number): Date[] {
   const days: Date[] = []
   const cursor = new Date(year, month, 1)
   while (cursor.getMonth() === month) {
-    if (isWorkingDay(cursor)) days.push(new Date(cursor))
+    days.push(new Date(cursor))
     cursor.setDate(cursor.getDate() + 1)
   }
   return days
@@ -61,10 +60,9 @@ export function fromDateString(dateStr: string): Date {
   return new Date(`${dateStr}T12:00:00`)
 }
 
-/** Hoy como día laborable (si hoy es domingo, retorna el sábado). */
+/** Hoy — sin restricción de día de la semana. */
 export function getTodayWorkingDay(): Date {
-  const today = new Date()
-  return isWorkingDay(today) ? today : getLastWorkingDay(today)
+  return new Date()
 }
 
 /**
@@ -84,6 +82,49 @@ export function formatShortDay(date: Date): { num: string; label: string } {
     num: format(date, 'd'),
     label: format(date, 'EEE', { locale: es }),
   }
+}
+
+/**
+ * Retorna exactamente 42 celdas (6 semanas × 7 días) para la grilla del mes.
+ * La semana empieza en LUNES (índice 0 = lunes ... 6 = domingo).
+ * Las celdas de relleno al inicio y al final son null.
+ * month es 0-indexed (convención JS: 0 = enero, 11 = diciembre).
+ */
+export function getDaysInMonthGrid(year: number, month: number): (Date | null)[] {
+  const firstDay = new Date(year, month, 1)
+  const lastDay = new Date(year, month + 1, 0)
+
+  // getDay() → 0=domingo ... 6=sábado
+  // Convertir a Monday-first: lunes=0 ... domingo=6
+  const firstDow = (firstDay.getDay() + 6) % 7
+  const lastDow = (lastDay.getDay() + 6) % 7
+
+  const grid: (Date | null)[] = []
+
+  // Padding inicio
+  for (let i = 0; i < firstDow; i++) {
+    grid.push(null)
+  }
+
+  // Días del mes
+  const cursor = new Date(year, month, 1)
+  while (cursor.getMonth() === month) {
+    grid.push(new Date(cursor))
+    cursor.setDate(cursor.getDate() + 1)
+  }
+
+  // Padding fin: completar hasta 42 celdas
+  const trailingNulls = lastDow === 6 ? 0 : 6 - lastDow
+  for (let i = 0; i < trailingNulls; i++) {
+    grid.push(null)
+  }
+
+  // Si quedamos en 35, agregar una semana más para llegar a 42
+  while (grid.length < 42) {
+    grid.push(null)
+  }
+
+  return grid
 }
 
 export function formatCarriedFrom(dateStr: string): string {

@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Bell, BellOff, LogOut, Menu, X } from 'lucide-react'
+import { Bell, BellOff, CalendarDays, List, LogOut, Menu, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import CalendarView from '@/components/agenda/CalendarView'
 import DateNavigator from '@/components/agenda/DateNavigator'
 import DayView from '@/components/agenda/DayView'
 import { getTodayWorkingDay, toDateString } from '@/lib/utils/dates'
@@ -23,6 +24,7 @@ export default function AgendaLayout({ userId, userEmail }: AgendaLayoutProps) {
   const router = useRouter()
   const [selectedDate, setSelectedDate] = useState<Date>(getTodayWorkingDay)
   const [navOpen, setNavOpen] = useState(false)
+  const [viewMode, setViewMode] = useState<'agenda' | 'calendar'>('agenda')
 
   // Fix altura en PWA Android: 100dvh se calcula antes de que el viewport
   // termine de inicializarse en recargas. window.innerHeight siempre es exacto.
@@ -66,6 +68,11 @@ export default function AgendaLayout({ userId, userEmail }: AgendaLayoutProps) {
 
   async function handleEditTask(id: string, updates: { title: string; time: string | null }) {
     await updateTask(id, updates)
+  }
+
+  function handleDayClick(date: Date) {
+    setSelectedDate(date)
+    setViewMode('agenda')
   }
 
   // ── Logout ─────────────────────────────────────────────────────────────
@@ -140,6 +147,20 @@ export default function AgendaLayout({ userId, userEmail }: AgendaLayoutProps) {
             </div>
           )}
 
+          {/* Botón toggle agenda / calendario */}
+          <button
+            onClick={() => setViewMode((v) => v === 'agenda' ? 'calendar' : 'agenda')}
+            aria-label={viewMode === 'agenda' ? 'Ver calendario' : 'Ver agenda'}
+            title={viewMode === 'agenda' ? 'Ver calendario mensual' : 'Ver agenda diaria'}
+            className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-800"
+          >
+            {viewMode === 'agenda' ? (
+              <CalendarDays className="h-4 w-4" />
+            ) : (
+              <List className="h-4 w-4" />
+            )}
+          </button>
+
           <button
             onClick={handleLogout}
             aria-label="Cerrar sesión"
@@ -182,20 +203,30 @@ export default function AgendaLayout({ userId, userEmail }: AgendaLayoutProps) {
           />
         )}
 
-        {/* DayView — panel principal */}
+        {/* Panel principal — agenda o calendario */}
         <main className="flex-1 overflow-hidden">
-          <DayView
-            key={selectedDateStr}
-            date={selectedDate}
-            tasks={tasks}
-            loading={loading}
-            error={error}
-            onToggleTask={handleToggleTask}
-            onDeleteTask={handleDeleteTask}
-            onEditTask={handleEditTask}
-            onAddTask={handleAddTask}
-            onReorderTasks={reorderTasks}
-          />
+          {viewMode === 'calendar' ? (
+            <div className="h-full overflow-y-auto">
+              <CalendarView
+                selectedDate={selectedDate}
+                userId={userId}
+                onDayClick={handleDayClick}
+              />
+            </div>
+          ) : (
+            <DayView
+              key={selectedDateStr}
+              date={selectedDate}
+              tasks={tasks}
+              loading={loading}
+              error={error}
+              onToggleTask={handleToggleTask}
+              onDeleteTask={handleDeleteTask}
+              onEditTask={handleEditTask}
+              onAddTask={handleAddTask}
+              onReorderTasks={reorderTasks}
+            />
+          )}
         </main>
       </div>
     </div>

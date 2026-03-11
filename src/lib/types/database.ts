@@ -56,6 +56,18 @@ export type TaskUpdate = Partial<{
 }>
 
 // =====================================================
+// MONTH VIEW
+// =====================================================
+
+export interface MonthTask {
+  id: string
+  date: string        // YYYY-MM-DD
+  title: string
+  type: TaskType
+  completed: boolean
+}
+
+// =====================================================
 // PUSH SUBSCRIPTION
 // =====================================================
 
