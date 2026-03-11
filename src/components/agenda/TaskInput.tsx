@@ -1,13 +1,14 @@
 'use client'
 
-import { useState, useRef } from 'react'
-import { Plus, Clock, Mic, MicOff, Loader2, Check, X } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { Plus, Clock, Mic, Loader2, Check, X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { parseTask, parseTimeInput } from '@/lib/utils/task-parser'
 import { TIMED_TASK_TYPES, TASK_TYPE_LABELS } from '@/lib/types/database'
 import { toDateString } from '@/lib/utils/dates'
+import RecordingPanel from '@/components/agenda/RecordingPanel'
 import type { TaskType, TaskSubmitData, VoiceTask } from '@/lib/types/database'
 
 // ─── Tipos locales ────────────────────────────────────────────────────────────
@@ -60,12 +61,19 @@ export default function TaskInput({ onSubmit, selectedDate }: TaskInputProps) {
   const [voiceTasks, setVoiceTasks] = useState<VoiceTask[] | null>(null)
   const [voiceError, setVoiceError] = useState<string | null>(null)
 
+  // Estado para el RecordingPanel
+  const [activeStream, setActiveStream] = useState<MediaStream | null>(null)
+  const [elapsed, setElapsed] = useState(0)
+
   const inputRef = useRef<HTMLInputElement>(null)
   const timeRef = useRef<HTMLInputElement>(null)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
   // Guardamos el mimeType elegido para reutilizarlo en processAudio
   const mimeTypeRef = useRef<string>('audio/webm')
+  // Cronómetro
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const cancelledRef = useRef<boolean>(false)
 
   // ── Flujo texto normal ───────────────────────────────────────────────────
 
@@ -127,6 +135,7 @@ export default function TaskInput({ onSubmit, selectedDate }: TaskInputProps) {
       const mediaRecorder = new MediaRecorder(stream, { mimeType })
       mimeTypeRef.current = mimeType
       chunksRef.current = []
+      cancelledRef.current = false
 
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) chunksRef.current.push(e.data)
@@ -134,12 +143,28 @@ export default function TaskInput({ onSubmit, selectedDate }: TaskInputProps) {
 
       mediaRecorder.onstop = () => {
         stream.getTracks().forEach((t) => t.stop())
-        void processAudio()
+        setActiveStream(null)
+        // Limpiar cronómetro
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current)
+          intervalRef.current = null
+        }
+        setElapsed(0)
+        if (!cancelledRef.current) {
+          void processAudio()
+        }
       }
 
       mediaRecorderRef.current = mediaRecorder
       mediaRecorder.start()
+      setActiveStream(stream)
       setRecording(true)
+
+      // Arrancar cronómetro
+      setElapsed(0)
+      intervalRef.current = setInterval(() => {
+        setElapsed((prev) => prev + 1)
+      }, 1000)
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Error al acceder al micrófono'
       setVoiceError(msg)
@@ -148,10 +173,27 @@ export default function TaskInput({ onSubmit, selectedDate }: TaskInputProps) {
   }
 
   function stopRecording() {
+    cancelledRef.current = false
     mediaRecorderRef.current?.stop()
     setRecording(false)
     setProcessing(true)
   }
+
+  function cancelRecording() {
+    cancelledRef.current = true
+    mediaRecorderRef.current?.stop()
+    setRecording(false)
+    setVoiceError(null)
+  }
+
+  // Cleanup al desmontar: limpiar intervalo si quedó activo
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+      }
+    }
+  }, [])
 
   async function processAudio() {
     try {
@@ -209,35 +251,53 @@ export default function TaskInput({ onSubmit, selectedDate }: TaskInputProps) {
   return (
     <div className="border-t border-gray-100 bg-white px-3 py-2">
 
-      {/* Input principal */}
-      <div className="flex items-center gap-2">
-        <Plus className="h-4 w-4 shrink-0 text-gray-400" />
-        <Input
-          ref={inputRef}
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Escribí acá y presioná Enter…"
-          className="border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0 placeholder:text-gray-400"
-          disabled={!!pendingTask || recording || processing}
+      {/* Panel de grabación — reemplaza el input mientras se graba */}
+      {recording && activeStream && (
+        <RecordingPanel
+          stream={activeStream}
+          onStop={stopRecording}
+          onCancel={cancelRecording}
+          elapsed={elapsed}
         />
+      )}
 
-        {/* Botón micrófono */}
-        <button
-          onClick={recording ? stopRecording : startRecording}
-          disabled={processing || !!pendingTask || !!voiceTasks}
-          aria-label={recording ? 'Detener grabación' : 'Grabar tarea por voz'}
-          className={cn(
-            'shrink-0 rounded-full p-1.5 transition-colors',
-            recording
-              ? 'animate-pulse bg-red-100 text-red-500 hover:bg-red-200'
-              : 'text-gray-400 hover:bg-gray-100 hover:text-blue-500',
-            (processing || !!pendingTask || !!voiceTasks) && 'cursor-not-allowed opacity-40'
-          )}
-        >
-          {recording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-        </button>
-      </div>
+      {/* Loading state — brecha entre startRecording() y stream disponible */}
+      {recording && !activeStream && (
+        <div className="flex items-center gap-2 py-1 text-sm text-gray-500">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span>Iniciando micrófono…</span>
+        </div>
+      )}
+
+      {/* Input principal — oculto mientras se graba */}
+      {!recording && (
+        <div className="flex items-center gap-2">
+          <Plus className="h-4 w-4 shrink-0 text-gray-400" />
+          <Input
+            ref={inputRef}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Escribí acá y presioná Enter…"
+            className="border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0 placeholder:text-gray-400"
+            disabled={!!pendingTask || processing}
+          />
+
+          {/* Botón micrófono — solo visible cuando NO se graba */}
+          <button
+            onClick={startRecording}
+            disabled={processing || !!pendingTask || !!voiceTasks}
+            aria-label="Grabar tarea por voz"
+            className={cn(
+              'shrink-0 rounded-full p-1.5 transition-colors',
+              'text-gray-400 hover:bg-gray-100 hover:text-blue-500',
+              (processing || !!pendingTask || !!voiceTasks) && 'cursor-not-allowed opacity-40'
+            )}
+          >
+            <Mic className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {/* Procesando */}
       {processing && (
