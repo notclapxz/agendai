@@ -142,7 +142,7 @@ export function useTasks(date: string, userId: string): UseTasksReturn {
     const maxPos = tasks.reduce((max, t) => Math.max(max, t.position), -1)
     const now = new Date().toISOString()
 
-    // Optimistic update
+    // Optimistic update — solo si la tarea pertenece al día que está mostrando este hook
     const optimisticTask: Task = {
       id: crypto.randomUUID(),
       user_id: userId,
@@ -157,7 +157,10 @@ export function useTasks(date: string, userId: string): UseTasksReturn {
       created_at: now,
       updated_at: now,
     }
-    setTasks((prev) => [...prev, optimisticTask])
+    const isCurrentDay = input.date === date
+    if (isCurrentDay) {
+      setTasks((prev) => [...prev, optimisticTask])
+    }
 
     try {
       const { data, error: insertError } = await supabase
@@ -172,13 +175,18 @@ export function useTasks(date: string, userId: string): UseTasksReturn {
 
       if (insertError) throw insertError
 
-      // Reemplazar optimistic con el real (tiene el id real de la DB)
-      setTasks((prev) =>
-        prev.map((t) => (t.id === optimisticTask.id ? (data as Task) : t))
-      )
+      if (isCurrentDay) {
+        // Reemplazar optimistic con el real (tiene el id real de la DB)
+        setTasks((prev) =>
+          prev.map((t) => (t.id === optimisticTask.id ? (data as Task) : t))
+        )
+      }
+      // Si es otro día: el realtime se encargará de actualizar ese día cuando el usuario lo navegue
     } catch (err: unknown) {
-      // Rollback optimistic
-      setTasks((prev) => prev.filter((t) => t.id !== optimisticTask.id))
+      if (isCurrentDay) {
+        // Rollback optimistic solo si habíamos agregado algo al estado
+        setTasks((prev) => prev.filter((t) => t.id !== optimisticTask.id))
+      }
       const msg = err instanceof Error ? err.message : 'Error al crear tarea'
       setError(msg)
       console.error('[useTasks] Error creating task', err)

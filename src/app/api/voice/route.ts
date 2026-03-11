@@ -105,13 +105,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     // ── 2. gpt-4o-mini — texto → tareas estructuradas (json_schema) ──────────
 
-    const systemPrompt = `Sos un asistente de agenda para un abogado peruano.
+    const dateReference = buildDateReference(todayStr)
+
+    const systemPrompt = `Sos un asistente de agenda para un profesional.
 Convertí el texto hablado en una lista de tareas estructuradas.
 
 Contexto de fechas:
 - Hoy es: ${todayStr} (${getDayName(todayStr)})
 - Día seleccionado en la agenda: ${selectedDateStr}
-- Semana: Lunes a Sábado. Los domingos NO EXISTEN — si una fecha calculada cae domingo, usá el lunes siguiente.
+
+Tabla de referencia — próximos 14 días desde hoy (usá ESTA tabla para resolver fechas relativas, NO hagas cálculos propios):
+${dateReference}
 
 Tipos válidos (exactamente así, case-sensitive):
 - "Tarea" → tarea genérica, preparar documentos, etc.
@@ -123,19 +127,22 @@ Tipos válidos (exactamente así, case-sensitive):
 - "Otro" → cualquier otra cosa
 
 Reglas de fecha:
-- Si menciona "mañana" → día siguiente laborable a HOY
-- Si menciona "el lunes", "el martes", etc. → próximo día de esa semana desde HOY
-- Si menciona "la próxima semana" → lunes de la próxima semana
-- Si menciona un mes ("en marzo", "el 15 de marzo") → calcular la fecha exacta del año en curso
-- Si NO menciona ninguna fecha → devolvé null (se usará el día seleccionado)
+- Si menciona "mañana" → usá la primera fecha de la tabla de referencia (el día inmediato siguiente a hoy)
+- Si menciona un día de la semana ("el lunes", "el martes", etc.) → buscá ese nombre en la tabla y usá su fecha exacta
+- Si menciona "la próxima semana" → buscá el día mencionado en la segunda semana de la tabla
+- Si menciona un mes ("en marzo", "el 15 de marzo") → calculá la fecha exacta del año en curso
+- Si NO menciona ninguna fecha → devolvé null (se usará el día seleccionado en la agenda)
 - Formato de fecha devuelta: "YYYY-MM-DD"
 
 Reglas de hora:
 - Si menciona hora → extraerla en formato "HH:MM" (24h). "a las 3" = "15:00", "a las 9" = "09:00"
 - Si no hay hora → null
 
-Reglas generales:
-- Separar correctamente cuando haya múltiples tareas en el dictado
+Reglas de separación de tareas (MUY IMPORTANTE):
+- Cada tarea mencionada debe ser un elemento SEPARADO en el array de salida
+- Conectores como "y", "también", "además", "y también" SIEMPRE indican una nueva tarea
+- Ejemplo: "llamar a Juan y revisar expediente" → DOS tareas: [{title:"Llamar a Juan"}, {title:"Revisar expediente"}]
+- Ejemplo: "audiencia a las 10 y reunión con Carlos a las 3" → DOS tareas separadas
 - El título debe ser limpio, sin la hora ni la fecha si ya las extrajiste`
 
     const chatRes = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -213,10 +220,39 @@ Reglas generales:
   }
 }
 
-// ─── Helper ───────────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function getDayName(dateStr: string): string {
   const days = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
   const d = new Date(`${dateStr}T12:00:00`)
   return days[d.getDay()] ?? ''
+}
+
+/**
+ * Genera una tabla de los próximos 14 días desde `todayStr` con su nombre
+ * de día de la semana y fecha exacta. El modelo solo tiene que "lookupear"
+ * en vez de hacer aritmética de calendario (que falla en edge cases).
+ *
+ * Ejemplo de salida:
+ *   sábado    → 2026-03-14
+ *   domingo   → 2026-03-15
+ *   lunes     → 2026-03-16
+ *   ...
+ */
+function buildDateReference(todayStr: string): string {
+  const days = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
+  const lines: string[] = []
+  const base = new Date(`${todayStr}T12:00:00`)
+
+  for (let i = 1; i <= 14; i++) {
+    const d = new Date(base)
+    d.setDate(base.getDate() + i)
+    const name = days[d.getDay()] ?? ''
+    const yyyy = d.getFullYear()
+    const mm = String(d.getMonth() + 1).padStart(2, '0')
+    const dd = String(d.getDate()).padStart(2, '0')
+    lines.push(`  ${name.padEnd(10)} → ${yyyy}-${mm}-${dd}`)
+  }
+
+  return lines.join('\n')
 }
