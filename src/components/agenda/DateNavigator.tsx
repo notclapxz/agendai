@@ -38,10 +38,11 @@ export default function DateNavigator({
 
   // Ref al día seleccionado para scroll automático
   const selectedRef = useRef<HTMLButtonElement>(null)
-  // Scroll automático al día seleccionado cuando cambia el mes visible
+  // Scroll automático al día seleccionado — se dispara con selectedDate
+  // para cubrir el caso donde el mes no cambia (mismo mes, distinto día)
   useEffect(() => {
     selectedRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-  }, [viewMonth, viewYear])
+  }, [selectedDate])
 
   function prevMonth() {
     if (viewMonth === 0) { setViewMonth(11); setViewYear((y) => y - 1) }
