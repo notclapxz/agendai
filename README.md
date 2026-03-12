@@ -176,4 +176,9 @@ Esta aplicación está disponible como producto personalizable. Si te interesa u
 
 ## 📄 Licencia
 
-MIT — libre para usar, modificar y distribuir.
+**Licencia Propietaria** — Copyright (c) 2025 Sebastian (notclapxz)
+
+El código fuente es visible con fines educativos y de evaluación.  
+**El uso comercial, deploy en producción y distribución están prohibidos** sin una licencia escrita del autor.
+
+Para obtener una licencia comercial: [contacto@clapxz.com](mailto:contacto@clapxz.com) · [clapxz.com](https://clapxz.com)
